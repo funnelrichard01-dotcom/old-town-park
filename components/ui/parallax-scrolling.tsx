@@ -7,6 +7,7 @@ import Lenis from '@studio-freight/lenis';
 import { ArrowDown } from 'lucide-react';
 import { SlideTabs } from '@/components/ui/slide-tabs';
 import DemoRadialScrollGalleryBento from '@/components/ui/demo';
+import TeamSection from '@/components/ui/team';
 
 export interface ParallaxComponentProps {
   title?: string;
@@ -134,8 +135,11 @@ export function ParallaxComponent({
     } else if (tab === "Portfolio") {
       const el = document.getElementById("portfolio-section") || document.getElementById("explore-section");
       if (el) el.scrollIntoView({ behavior: 'smooth' });
+    } else if (tab === "Team") {
+      const el = document.getElementById("team-section");
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     } else if (tab === "Buy/sell" || tab === "Contact") {
-      const el = document.getElementById("footer-section") || document.getElementById("explore-section");
+      const el = document.getElementById("footer-section") || document.getElementById("team-section") || document.getElementById("explore-section");
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   };
@@ -158,7 +162,7 @@ export function ParallaxComponent({
       <section className="parallax__header">
         {showNav && (
           <nav className="parallax__nav" aria-label="Hero Navigation">
-            <SlideTabs onTabChange={handleTabChange} />
+            <SlideTabs tabs={["Home", "Portfolio", "Team", "Contact"]} onTabChange={handleTabChange} />
           </nav>
         )}
         <div className="parallax__visuals">
@@ -234,6 +238,9 @@ export function ParallaxComponent({
       <section className="parallax__content !p-0 !min-h-0 bg-background" id="explore-section">
         <div id="portfolio-section" className="w-full">
           <DemoRadialScrollGalleryBento className="border-0 rounded-none bg-transparent" />
+        </div>
+        <div className="w-full border-t border-border/40">
+          <TeamSection id="team-section" />
         </div>
       </section>
     </div>

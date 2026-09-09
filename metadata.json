@@ -1,6 +1,6 @@
 {
   "name": "Parallax Scrolling",
-  "description": "Interactive layered parallax scrolling component featuring cinematic video background, GSAP ScrollTrigger, radial scroll portfolio gallery, and Lenis smooth scrolling for Old Town Park Ordinary.",
+  "description": "Interactive layered parallax scrolling component featuring cinematic video background, GSAP ScrollTrigger, radial scroll portfolio gallery, infinite marquee team section, and Lenis smooth scrolling for Old Town Park Ordinary.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
