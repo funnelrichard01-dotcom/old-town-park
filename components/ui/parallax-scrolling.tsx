@@ -13,8 +13,6 @@ export interface ParallaxComponentProps {
   showNav?: boolean;
   videoSrc?: string;
   posterSrc?: string;
-  showControls?: boolean;
-  onUploadVideo?: (file: File) => void;
   onExplore?: () => void;
   exploreText?: string;
 }
@@ -25,54 +23,63 @@ export function ParallaxComponent({
   showNav = true,
   videoSrc = "/assets/hero-video.mp4",
   posterSrc = "/assets/old_town_park_hero.jpg",
-  showControls = true,
   onExplore,
   exploreText = "EXPLORE NOW"
 }: ParallaxComponentProps = {}) {
   const parallaxRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
-  const [activeVideo, setActiveVideo] = useState(videoSrc);
-  const [activePoster, setActivePoster] = useState(posterSrc);
 
+  // Robust video autoplay handling
   useEffect(() => {
-    setActiveVideo(videoSrc);
-  }, [videoSrc]);
+    const video = videoRef.current;
+    if (!video) return;
 
-  useEffect(() => {
-    setActivePoster(posterSrc);
-  }, [posterSrc]);
+    // Force muted on DOM element (required by browser autoplay policies)
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
 
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (videoRef.current.paused) {
-      videoRef.current.play();
-      setIsPlaying(true);
-    } else {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-  };
-
-  const toggleMute = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !videoRef.current.muted;
-    setIsMuted(videoRef.current.muted);
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setActiveVideo(url);
-      setIsPlaying(true);
-      if (videoRef.current) {
-        videoRef.current.src = url;
-        videoRef.current.play();
+    const startPlayback = () => {
+      if (video.paused) {
+        const promise = video.play();
+        if (promise !== undefined) {
+          promise.catch((error) => {
+            console.warn("Autoplay waiting for user gesture:", error);
+          });
+        }
       }
-    }
-  };
+    };
+
+    // Attempt playback immediately
+    startPlayback();
+
+    // Listen to video readiness events
+    video.addEventListener("loadeddata", startPlayback);
+    video.addEventListener("canplay", startPlayback);
+
+    // Fallback on first user interaction if browser restricted autoplay
+    const handleFirstGesture = () => {
+      startPlayback();
+      window.removeEventListener("pointerdown", handleFirstGesture);
+      window.removeEventListener("touchstart", handleFirstGesture);
+      window.removeEventListener("scroll", handleFirstGesture);
+      window.removeEventListener("keydown", handleFirstGesture);
+    };
+
+    window.addEventListener("pointerdown", handleFirstGesture, { passive: true });
+    window.addEventListener("touchstart", handleFirstGesture, { passive: true });
+    window.addEventListener("scroll", handleFirstGesture, { passive: true });
+    window.addEventListener("keydown", handleFirstGesture, { passive: true });
+
+    return () => {
+      video.removeEventListener("loadeddata", startPlayback);
+      video.removeEventListener("canplay", startPlayback);
+      window.removeEventListener("pointerdown", handleFirstGesture);
+      window.removeEventListener("touchstart", handleFirstGesture);
+      window.removeEventListener("scroll", handleFirstGesture);
+      window.removeEventListener("keydown", handleFirstGesture);
+    };
+  }, [videoSrc]);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -148,13 +155,22 @@ export function ParallaxComponent({
             <div data-parallax-layer="1" className="parallax__layer-video-container">
               <video
                 ref={videoRef}
-                src={activeVideo}
-                poster={activePoster}
+                src={videoSrc}
+                poster={posterSrc}
                 autoPlay
                 loop
-                muted={isMuted}
+                muted
                 playsInline
+                preload="auto"
                 className="parallax__video-bg"
+                onLoadedMetadata={(e) => {
+                  e.currentTarget.muted = true;
+                  e.currentTarget.play().catch(() => {});
+                }}
+                onCanPlay={(e) => {
+                  e.currentTarget.muted = true;
+                  e.currentTarget.play().catch(() => {});
+                }}
               />
               <div className="parallax__video-overlay"></div>
             </div>
@@ -198,101 +214,6 @@ export function ParallaxComponent({
               </div>
             </div>
           </div>
-
-          {/* Floating Hero Video Controls Bar */}
-          {showControls && (
-            <div className="parallax__hero-controls">
-              <div className="flex items-center gap-2 p-1.5 rounded-full bg-zinc-950/75 backdrop-blur-md border border-white/15 text-xs text-white shadow-2xl">
-                {/* Scene Toggle */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveVideo("/assets/hero-video.mp4");
-                    setActivePoster("/assets/old_town_park_hero.jpg");
-                  }}
-                  className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${
-                    activeVideo === "/assets/hero-video.mp4"
-                      ? "bg-white text-black font-semibold shadow-sm"
-                      : "text-zinc-300 hover:text-white"
-                  }`}
-                >
-                  Aerial Tower
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveVideo("/assets/interior-video.mp4");
-                    setActivePoster("/assets/old_town_interior.jpg");
-                  }}
-                  className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${
-                    activeVideo === "/assets/interior-video.mp4"
-                      ? "bg-white text-black font-semibold shadow-sm"
-                      : "text-zinc-300 hover:text-white"
-                  }`}
-                >
-                  Penthouse Suite
-                </button>
-
-                <span className="w-px h-4 bg-white/20 mx-0.5"></span>
-
-                {/* Play / Pause */}
-                <button
-                  type="button"
-                  onClick={togglePlay}
-                  className="px-2.5 py-1.5 rounded-full text-zinc-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                  title={isPlaying ? "Pause Video" : "Play Video"}
-                >
-                  {isPlaying ? (
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <rect x="6" y="4" width="4" height="16" rx="1" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                  <span>{isPlaying ? "Pause" : "Play"}</span>
-                </button>
-
-                {/* Sound Toggle */}
-                <button
-                  type="button"
-                  onClick={toggleMute}
-                  className="px-2.5 py-1.5 rounded-full text-zinc-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                  title={isMuted ? "Unmute" : "Mute"}
-                >
-                  {isMuted ? (
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                    </svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                    </svg>
-                  )}
-                  <span>{isMuted ? "Muted" : "Sound"}</span>
-                </button>
-
-                <span className="w-px h-4 bg-white/20 mx-0.5"></span>
-
-                {/* Upload Custom Video */}
-                <label className="px-3 py-1.5 rounded-full text-zinc-300 hover:text-white bg-white/10 hover:bg-white/15 transition-all cursor-pointer flex items-center gap-1.5">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  <span>Upload Video</span>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
-          )}
 
           <div className="parallax__fade"></div>
         </div>

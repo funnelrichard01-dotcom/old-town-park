@@ -124,19 +124,6 @@ body {
   pointer-events: none;
 }
 
-.parallax__hero-controls {
-  position: absolute;
-  bottom: 2.5rem;
-  left: 0;
-  right: 0;
-  z-index: 35;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0 1rem;
-  pointer-events: auto;
-}
-
 .parallax__layer-img {
   position: absolute;
   top: 0;
